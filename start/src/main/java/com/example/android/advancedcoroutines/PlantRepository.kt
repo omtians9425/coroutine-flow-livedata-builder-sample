@@ -16,6 +16,7 @@
 
 package com.example.android.advancedcoroutines
 
+import com.example.android.advancedcoroutines.util.CacheOnSuccess
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -39,6 +40,12 @@ class PlantRepository private constructor(
      * Returns a LiveData-wrapped List of Plants.
      */
     val plants = plantDao.getPlants()
+
+    // in-memory cache for sorting
+    private var plantsListSortOrderCache
+            = CacheOnSuccess(onErrorFallback = {listOf<String>()}) {
+        plantService.customPlantSortOrder()
+    }
 
     /**
      * Fetch a list of [Plant]s from the database that matches a given [GrowZone].
