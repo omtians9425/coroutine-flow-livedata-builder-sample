@@ -19,10 +19,12 @@ package com.example.android.advancedcoroutines
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.liveData
 import androidx.lifecycle.map
+import androidx.lifecycle.switchMap
 import com.example.android.advancedcoroutines.util.CacheOnSuccess
 import com.example.android.advancedcoroutines.utils.ComparablePair
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Repository module for handling data operations.
@@ -63,13 +65,24 @@ class PlantRepository private constructor(
      * Fetch a list of [Plant]s from the database that matches a given [GrowZone].
      * Returns a LiveData-wrapped List of Plants.
      */
-    fun getPlantsWithGrowZone(growZone: GrowZone) = liveData<List<Plant>> {
-        val plantsWithGrowZoneLiveData = plantDao.getPlantsWithGrowZoneNumber(growZone.number)
-        val customSortOrder = plantsListSortOrderCache.getOrAwait()
-        emitSource(plantsWithGrowZoneLiveData.map { plantList ->
-            plantList.applySort(customSortOrder)
-        })
-    }
+
+    fun getPlantsWithGrowZone(growZone: GrowZone) =
+            plantDao.getPlantsWithGrowZoneNumber(growZone.number)
+                    .switchMap { plantList ->
+                        liveData {
+                            val customSortOrder = plantsListSortOrderCache.getOrAwait()
+                            emit(plantList.applyMainSafeSort(customSortOrder))
+                        }
+                    }
+
+    // not safe-sort version
+//    fun getPlantsWithGrowZone(growZone: GrowZone) = liveData<List<Plant>> {
+//        val plantsWithGrowZoneLiveData = plantDao.getPlantsWithGrowZoneNumber(growZone.number)
+//        val customSortOrder = plantsListSortOrderCache.getOrAwait()
+//        emitSource(plantsWithGrowZoneLiveData.map { plantList ->
+//            plantList.applySort(customSortOrder)
+//        })
+//    }
 
     // basic version: uses DAO directly.
 //    fun getPlantsWithGrowZone(growZone: GrowZone) =
@@ -127,6 +140,11 @@ class PlantRepository private constructor(
             ComparablePair(positionForItem, plant.name) // sort order is primary. second is alphabetical.
         }
     }
+
+    suspend fun List<Plant>.applyMainSafeSort(customSortOrder: List<String>) =
+            withContext(defaultDispatcher) {
+                this@applyMainSafeSort.applySort(customSortOrder)
+            }
 
     companion object {
 
