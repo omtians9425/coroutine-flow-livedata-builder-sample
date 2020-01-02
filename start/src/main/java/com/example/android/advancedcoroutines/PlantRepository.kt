@@ -17,6 +17,7 @@
 package com.example.android.advancedcoroutines
 
 import com.example.android.advancedcoroutines.util.CacheOnSuccess
+import com.example.android.advancedcoroutines.utils.ComparablePair
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -30,9 +31,9 @@ import kotlinx.coroutines.Dispatchers
  * [tryUpdateRecentPlantsCache].
  */
 class PlantRepository private constructor(
-    private val plantDao: PlantDao,
-    private val plantService: NetworkService,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+        private val plantDao: PlantDao,
+        private val plantService: NetworkService,
+        private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
 
     /**
@@ -41,9 +42,8 @@ class PlantRepository private constructor(
      */
     val plants = plantDao.getPlants()
 
-    // in-memory cache for sorting
-    private var plantsListSortOrderCache
-            = CacheOnSuccess(onErrorFallback = {listOf<String>()}) {
+    // in-memory cache for sorting. Returns an empty list in case of error, so as not to affect UI
+    private var plantsListSortOrderCache = CacheOnSuccess(onErrorFallback = { listOf<String>() }) {
         plantService.customPlantSortOrder()
     }
 
@@ -52,7 +52,7 @@ class PlantRepository private constructor(
      * Returns a LiveData-wrapped List of Plants.
      */
     fun getPlantsWithGrowZone(growZone: GrowZone) =
-        plantDao.getPlantsWithGrowZoneNumber(growZone.number)
+            plantDao.getPlantsWithGrowZoneNumber(growZone.number)
 
     /**
      * Returns true if we should make a network request.
@@ -98,14 +98,24 @@ class PlantRepository private constructor(
         plantDao.insertAll(plants)
     }
 
+    private fun List<Plant>.applySort(customSortOrder: List<String>): List<Plant> {
+        return sortedBy { plant ->
+            val positionForItem = customSortOrder.indexOf(plant.plantId).let { order ->
+                if (order > -1) order else Int.MAX_VALUE
+            }
+            ComparablePair(positionForItem, plant.name) // sort order is primary. second is alphabetical.
+        }
+    }
+
     companion object {
 
         // For Singleton instantiation
-        @Volatile private var instance: PlantRepository? = null
+        @Volatile
+        private var instance: PlantRepository? = null
 
         fun getInstance(plantDao: PlantDao, plantService: NetworkService) =
-            instance ?: synchronized(this) {
-                instance ?: PlantRepository(plantDao, plantService).also { instance = it }
-            }
+                instance ?: synchronized(this) {
+                    instance ?: PlantRepository(plantDao, plantService).also { instance = it }
+                }
     }
 }
