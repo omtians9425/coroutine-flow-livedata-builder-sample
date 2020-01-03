@@ -24,6 +24,7 @@ import com.example.android.advancedcoroutines.util.CacheOnSuccess
 import com.example.android.advancedcoroutines.utils.ComparablePair
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 /**
@@ -45,6 +46,10 @@ class PlantRepository private constructor(
      * Fetch a list of [Plant]s from the database.
      * Returns a LiveData-wrapped List of Plants.
      */
+    // flow version
+    val plantsFlow: Flow<List<Plant>>
+        get() = plantDao.getPlantsFlow()
+
     val plants: LiveData<List<Plant>> = liveData {
         val plantsLiveData = plantDao.getPlants()
         val customSortOrder = plantsListSortOrderCache.getOrAwait()
@@ -55,7 +60,6 @@ class PlantRepository private constructor(
 
     //    val plants = plantDao.getPlants() // basic version: uses DAO directly.
 
-
     // in-memory cache for sorting. Returns an empty list in case of error, so as not to affect UI
     private var plantsListSortOrderCache = CacheOnSuccess(onErrorFallback = { listOf<String>() }) {
         plantService.customPlantSortOrder()
@@ -65,6 +69,10 @@ class PlantRepository private constructor(
      * Fetch a list of [Plant]s from the database that matches a given [GrowZone].
      * Returns a LiveData-wrapped List of Plants.
      */
+    // flow version
+    fun getPlantsWithGrowZoneFlow(growZone: GrowZone): Flow<List<Plant>> {
+        return plantDao.getPlantsWithGrowZoneNumberFlow(growZone.number)
+    }
 
     fun getPlantsWithGrowZone(growZone: GrowZone) =
             plantDao.getPlantsWithGrowZoneNumber(growZone.number)
