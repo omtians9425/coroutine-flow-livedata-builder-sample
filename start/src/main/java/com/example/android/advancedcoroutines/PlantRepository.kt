@@ -54,6 +54,8 @@ class PlantRepository private constructor(
                 .combine(customSortFlow) { plants, sortOrder ->
                     plants.applySort(sortOrder)
                 }
+                .flowOn(defaultDispatcher)
+                .conflate()
 
     val plants: LiveData<List<Plant>> = liveData {
         val plantsLiveData = plantDao.getPlants()
