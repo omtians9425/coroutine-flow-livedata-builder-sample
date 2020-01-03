@@ -92,14 +92,14 @@ class PlantListViewModel internal constructor(
 
         // newer
         growZoneChannel.asFlow()
-//                .mapLatest { growZone ->
-//                    _spinner.value = true
-//                    if (growZone == NoGrowZone) {
-//                        plantRepository.plantsFlow
-//                    } else {
-//                        plantRepository.getPlantsWithGrowZoneFlow(growZone)
-//                    }
-//                }
+                .mapLatest { growZone ->
+                    _spinner.value = true
+                    if (growZone == NoGrowZone) {
+                        plantRepository.plantsFlow
+                    } else {
+                        plantRepository.getPlantsWithGrowZoneFlow(growZone)
+                    }
+                }
                 .onCompletion { _spinner.value = false }
                 .catch { throwable -> _snackbar.value = throwable.message }
                 .launchIn(viewModelScope)
