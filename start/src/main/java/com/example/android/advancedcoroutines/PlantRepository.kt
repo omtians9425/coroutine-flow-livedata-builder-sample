@@ -23,10 +23,7 @@ import androidx.lifecycle.switchMap
 import com.example.android.advancedcoroutines.util.CacheOnSuccess
 import com.example.android.advancedcoroutines.utils.ComparablePair
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
 
 /**
  * Repository module for handling data operations.
@@ -49,7 +46,9 @@ class PlantRepository private constructor(
      * Fetch a list of [Plant]s from the database.
      * Returns a LiveData-wrapped List of Plants.
      */
-    // flow version
+    /*
+    flow version. Any change to either plants or sortOrder will call plants.applySort(sortOrder).
+     */
     val plantsFlow: Flow<List<Plant>>
         get() = plantDao.getPlantsFlow()
                 .combine(customSortFlow) { plants, sortOrder ->
@@ -71,7 +70,13 @@ class PlantRepository private constructor(
         plantService.customPlantSortOrder()
     }
 
-    private val customSortFlow = plantsListSortOrderCache::getOrAwait.asFlow() // flow conversion for single function
+
+    private val customSortFlow = plantsListSortOrderCache::getOrAwait.asFlow()
+            .onStart {
+                emit(listOf()) // no custom sort initially.
+                delay(1500L)
+            }
+//    private val customSortFlow = plantsListSortOrderCache::getOrAwait.asFlow() // flow conversion for single function
 //    private val customSortFlow = flow { emit(plantsListSortOrderCache.getOrAwait())} // basic flow expression
 
 
