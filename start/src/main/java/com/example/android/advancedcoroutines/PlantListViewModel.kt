@@ -71,6 +71,8 @@ class PlantListViewModel internal constructor(
     init {
         // When creating a new ViewModel, clear the grow zone and perform any related udpates
         clearGrowZoneNumber()
+
+        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
     }
 
     /**
