@@ -21,8 +21,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
@@ -31,7 +30,7 @@ import kotlinx.coroutines.launch
 @FlowPreview
 @ExperimentalCoroutinesApi
 class PlantListViewModel internal constructor(
-    private val plantRepository: PlantRepository
+        private val plantRepository: PlantRepository
 ) : ViewModel() {
 
     /**
@@ -76,7 +75,7 @@ class PlantListViewModel internal constructor(
     private val growZoneChannel = ConflatedBroadcastChannel<GrowZone>()
 
     val plantsUsingFlow: LiveData<List<Plant>> = growZoneChannel.asFlow()
-            .flatMapLatest {  growZone ->
+            .flatMapLatest { growZone ->
                 if (growZone == NoGrowZone) {
                     plantRepository.plantsFlow
                 } else {
@@ -88,7 +87,22 @@ class PlantListViewModel internal constructor(
         // When creating a new ViewModel, clear the grow zone and perform any related udpates
         clearGrowZoneNumber()
 
-        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
+        // older version
+//        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
+
+        // newer
+        growZoneChannel.asFlow()
+//                .mapLatest { growZone ->
+//                    _spinner.value = true
+//                    if (growZone == NoGrowZone) {
+//                        plantRepository.plantsFlow
+//                    } else {
+//                        plantRepository.getPlantsWithGrowZoneFlow(growZone)
+//                    }
+//                }
+                .onCompletion { _spinner.value = false }
+                .catch { throwable -> _snackbar.value = throwable.message }
+                .launchIn(viewModelScope)
     }
 
     /**
@@ -102,7 +116,7 @@ class PlantListViewModel internal constructor(
         growZoneChannel.offer(GrowZone(num))
 
         // initial code version, will move during flow rewrite
-        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
+//        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
     }
 
     /**
@@ -116,7 +130,7 @@ class PlantListViewModel internal constructor(
         growZoneChannel.offer(NoGrowZone)
 
         // initial code version, will move during flow rewrite
-        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
+//        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
     }
 
     /**
