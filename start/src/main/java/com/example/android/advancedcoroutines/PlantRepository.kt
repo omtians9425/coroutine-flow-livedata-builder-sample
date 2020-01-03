@@ -89,6 +89,13 @@ class PlantRepository private constructor(
     // flow version
     fun getPlantsWithGrowZoneFlow(growZone: GrowZone): Flow<List<Plant>> {
         return plantDao.getPlantsWithGrowZoneNumberFlow(growZone.number)
+                .map { plantList ->
+                    // It is redundant process if request every time without cache.
+                    val customSortOrder = plantsListSortOrderCache.getOrAwait()
+
+                    val nextValue = plantList.applyMainSafeSort(customSortOrder)
+                    nextValue
+                }
     }
 
     fun getPlantsWithGrowZone(growZone: GrowZone) =
