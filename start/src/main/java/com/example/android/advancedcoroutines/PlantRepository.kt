@@ -24,7 +24,10 @@ import com.example.android.advancedcoroutines.util.CacheOnSuccess
 import com.example.android.advancedcoroutines.utils.ComparablePair
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
 /**
@@ -36,6 +39,7 @@ import kotlinx.coroutines.withContext
  * To update the plants cache, call [tryUpdateRecentPlantsForGrowZoneCache] or
  * [tryUpdateRecentPlantsCache].
  */
+@FlowPreview
 class PlantRepository private constructor(
         private val plantDao: PlantDao,
         private val plantService: NetworkService,
@@ -64,6 +68,10 @@ class PlantRepository private constructor(
     private var plantsListSortOrderCache = CacheOnSuccess(onErrorFallback = { listOf<String>() }) {
         plantService.customPlantSortOrder()
     }
+
+    private val customSortFlow = plantsListSortOrderCache::getOrAwait.asFlow() // flow conversion for single function
+//    private val customSortFlow = flow { emit(plantsListSortOrderCache.getOrAwait())} // basic flow expression
+
 
     /**
      * Fetch a list of [Plant]s from the database that matches a given [GrowZone].
