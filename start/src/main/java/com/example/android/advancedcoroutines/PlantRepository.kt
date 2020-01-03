@@ -22,13 +22,11 @@ import androidx.lifecycle.map
 import androidx.lifecycle.switchMap
 import com.example.android.advancedcoroutines.util.CacheOnSuccess
 import com.example.android.advancedcoroutines.utils.ComparablePair
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.withContext
 
 /**
  * Repository module for handling data operations.
@@ -39,6 +37,7 @@ import kotlinx.coroutines.withContext
  * To update the plants cache, call [tryUpdateRecentPlantsForGrowZoneCache] or
  * [tryUpdateRecentPlantsCache].
  */
+@ExperimentalCoroutinesApi
 @FlowPreview
 class PlantRepository private constructor(
         private val plantDao: PlantDao,
@@ -53,6 +52,9 @@ class PlantRepository private constructor(
     // flow version
     val plantsFlow: Flow<List<Plant>>
         get() = plantDao.getPlantsFlow()
+                .combine(customSortFlow) { plants, sortOrder ->
+                    plants.applySort(sortOrder)
+                }
 
     val plants: LiveData<List<Plant>> = liveData {
         val plantsLiveData = plantDao.getPlants()
