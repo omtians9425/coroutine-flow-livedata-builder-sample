@@ -99,6 +99,7 @@ class PlantListViewModel internal constructor(
      */
     fun setGrowZoneNumber(num: Int) {
         growZone.value = GrowZone(num)
+        growZoneChannel.offer(GrowZone(num))
 
         // initial code version, will move during flow rewrite
         launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
@@ -112,6 +113,7 @@ class PlantListViewModel internal constructor(
      */
     fun clearGrowZoneNumber() {
         growZone.value = NoGrowZone
+        growZoneChannel.offer(NoGrowZone)
 
         // initial code version, will move during flow rewrite
         launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
