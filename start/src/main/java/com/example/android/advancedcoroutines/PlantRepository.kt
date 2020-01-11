@@ -58,8 +58,8 @@ class PlantRepository private constructor(
                 .conflate()
 
     val plants: LiveData<List<Plant>> = liveData {
-        val plantsLiveData = plantDao.getPlants()
-        val customSortOrder = plantsListSortOrderCache.getOrAwait()
+        val plantsLiveData = plantDao.getPlants() // another LiveData
+        val customSortOrder = plantsListSortOrderCache.getOrAwait() // suspend function
         emitSource(plantsLiveData.map { plantList ->
             plantList.applySort(customSortOrder)
         })
@@ -98,14 +98,17 @@ class PlantRepository private constructor(
                 }
     }
 
-    fun getPlantsWithGrowZone(growZone: GrowZone) =
-            plantDao.getPlantsWithGrowZoneNumber(growZone.number)
-                    .switchMap { plantList ->
-                        liveData {
-                            val customSortOrder = plantsListSortOrderCache.getOrAwait()
-                            emit(plantList.applyMainSafeSort(customSortOrder))
-                        }
+    fun getPlantsWithGrowZone(growZone: GrowZone): LiveData<List<Plant>> {
+        return plantDao.getPlantsWithGrowZoneNumber(growZone.number)
+                .switchMap { plantList ->
+                    liveData {
+                        // suspend function
+                        val customSortOrder = plantsListSortOrderCache.getOrAwait()
+                        // call another suspend function (heavy sort) and emit
+                        emit(plantList.applyMainSafeSort(customSortOrder))
                     }
+                }
+    }
 
     // not safe-sort version
 //    fun getPlantsWithGrowZone(growZone: GrowZone) = liveData<List<Plant>> {
